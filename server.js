@@ -3,7 +3,8 @@ import fs from "node:fs/promises";
 import http from "node:http";
 import postgres from "postgres";
 
-process.loadEnvFile();
+// process.loadEnvFile();  // removed for Render
+
 const {
   PORT = 3000,
   ADDR = "0.0.0.0",
@@ -28,7 +29,7 @@ if (!TELEGRAM_TOKEN || !TELEGRAM_WEBHOOK) {
 console.log(`WEBHOOK: ${TELEGRAM_WEBHOOK}`);
 console.log(`Use trace.moe API: ${TRACE_MOE_KEY ? "with" : "without"} API Key`);
 console.log(
-  `Logs to database: ${DB_HOST ? `postgres://${DB_USER}:***@${DB_HOST}:${DB_PORT}/${DB_NAME}` : "false"}`,
+  `Logs to database: ${DB_HOST ? `postgres://${DB_USER}:***@${DB_HOST}:${DB_PORT}/${DB_NAME}` : "false"}`
 );
 
 const sql = DB_HOST
@@ -191,7 +192,6 @@ const submitSearch = (imageFileURL, opts) =>
     text += [native, chinese, romaji, english]
       .filter((e) => e)
       .reduce(
-        // deduplicate titles
         (acc, cur) =>
           acc.map((e) => e.toLowerCase()).includes(cur.toLowerCase()) ? acc : [...acc, cur],
         [],
@@ -227,7 +227,6 @@ const messageIsMentioningBot = (message) => {
     );
   }
   if (message.caption) {
-    // Telegram does not provide entities when mentioning the bot in photo caption
     return message.caption.toLowerCase().indexOf(`@${botName.toLowerCase()}`) >= 0;
   }
   return false;
@@ -261,7 +260,6 @@ const messageIsSkipPreview = (message) => {
   return message.text?.toLowerCase().includes("skip");
 };
 
-// https://core.telegram.org/bots/api#photosize
 const getImageUrlFromPhotoSize = async (PhotoSize) => {
   if (PhotoSize?.file_id) {
     const json = await fetch(
@@ -276,7 +274,7 @@ const getImageUrlFromPhotoSize = async (PhotoSize) => {
 
 const getImageFromMessage = async (message) => {
   if (message.photo) {
-    return await getImageUrlFromPhotoSize(message.photo.pop()); // get the last (largest) photo
+    return await getImageUrlFromPhotoSize(message.photo.pop());
   }
   if (message.animation) {
     return await getImageUrlFromPhotoSize(message.animation);
@@ -309,7 +307,7 @@ const getImageFromMessage = async (message) => {
 };
 
 const queue = new Set();
-setInterval(() => queue.clear(), 60 * 60 * 1000); // reset search queue every 60 mins
+setInterval(() => queue.clear(), 60 * 60 * 1000);
 
 const privateMessageHandler = async (message) => {
   const searchOpts = getSearchOpts(message);
@@ -371,7 +369,6 @@ const groupMessageHandler = async (message) => {
         parse_mode: "Markdown",
       });
     }
-    // cannot find image from the message mentioning the bot
     return await sendMessage(
       message.chat.id,
       "Mention me in an anime screenshot, I will tell you what anime is that",
